@@ -1,0 +1,122 @@
+You are a Flutter developer. Build a complete, production-ready educational AI app called "Echo AI" with the exact specifications below. Use Flutter and Dart. After building, I will download the source code and compile the APK myself.
+
+═══════════════════════════════════════════════
+GLOBAL CONFIGURATION (use these constants)
+═══════════════════════════════════════════════
+Groq API Key: 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
+Groq API Endpoint: https://api.groq.com/openai/v1/chat/completions
+AI Model: openai/gpt-oss-120b
+AdMob App ID: (not used yet, but you can add placeholder)
+Supported UI languages: en, hi, bn, ta, te, kn, ml, mr, gu, pa, or, as, ur, ar, fr, es, de, ja, ko, zh, pt, ru, nl, tr, vi, th, id, pl, sv (29 total)
+Supported Voice/TTS languages: same list plus more from flutter_tts
+Flutter packages to use: http, flutter_tts, google_mlkit_text_recognition, image_picker, path_provider, shared_preferences, google_fonts, flutter_markdown, permission_handler, uuid, intl, flutter_localizations
+
+═══════════════════════════════════════════════
+APP STRUCTURE (3 bottom navigation tabs)
+═══════════════════════════════════════════════
+Tab 1 – SCANNER (main screen)
+Tab 2 – NOTEBOOK
+Tab 3 – SETTINGS
+
+═══════════════════════════════════════════════
+TAB 1: SCANNER SCREEN (Home Screen)
+═══════════════════════════════════════════════
+When the app opens, the user sees a camera icon and "Tap to scan a page" or "Add photos (max 10)". They can take photos or select from gallery. Up to 10 photos allowed.
+
+After photos are added, OCR (google_mlkit_text_recognition) extracts all text from each photo. The extracted text is stored in a variable called "currentPageContext".
+
+The user then sees a text field at the bottom where they can type a question or prompt (e.g., "Explain this page in simple Bengali" or "Solve all math problems on this page" or "Generate a quiz from this content").
+
+The prompt and the page context are sent to the Groq API along with the selected AI Response Language and the system prompt that forces the AI to:
+- Give direct, step-by-step explanations.
+- Use the selected language (casual everyday form for Indian languages, with scientific terms in English).
+- If math or physics problems are present, solve them completely with all steps shown.
+- Use plain text only (no LaTeX, fractions as (a)/(b), sqrt as sqrt()).
+- If the user didn't ask for a solve, just summarize/explain.
+
+The AI response is displayed beautifully using flutter_markdown. Below the response, there are action buttons:
+- "Read Aloud" (speaker icon) – uses flutter_tts to speak the response in the selected Voice Language.
+- "Add to Note" – saves the response into the Notebook (with a subject/topic label).
+- "Copy" – copies the text to clipboard.
+
+The user can continue asking follow-up questions in the same screen; the context is kept for the session.
+
+AI Response Language picker (not the same as Voice Language) is shown as a dropdown at the top of this screen, allowing the user to choose in which language the AI writes its answer. Default: English.
+
+Voice Language picker is separate (in Settings), controlling the language used by TTS.
+
+═══ OCR AND MATH/PHYSICS HANDLING ═══
+When the page context contains mathematical expressions (detected by presence of numbers and operators), the system prompt must instruct the AI to:
+- Solve every math/physics problem step-by-step.
+- Show formulas, substitution, solving steps, and final bold answer.
+- If a problem cannot be solved (e.g., ambiguous), explain the concept instead and state why.
+
+═══ QUIZ/TEST GENERATION ═══
+There is a "Generate Quiz" button on the Scanner screen. When tapped, the user can select:
+- Number of questions (1-15)
+- Time limit (5-60 minutes)
+- Subject (auto-detected or manual)
+
+The AI generates a quiz/exam from the currentPageContext. The quiz is displayed in a new screen where the user answers multiple-choice questions (quiz) or open-ended (exam). A countdown timer runs. At the end, the AI grades it and shows correct answers with explanations.
+
+═══════════════════════════════════════════════
+TAB 2: NOTEBOOK
+═══════════════════════════════════════════════
+A list of saved notes. Each note has:
+- Title (auto-generated from first 30 chars of content)
+- Subject/topic tag
+- Date saved
+
+Tapping a note opens it for editing. The user can edit the text freely, highlight, or use the "AI Assistant" button to modify the note (e.g., "Rewrite this in simpler Bengali" or "Expand this explanation"). This AI call uses the same Groq API.
+
+Notes are stored locally as JSON files.
+
+═══════════════════════════════════════════════
+TAB 3: SETTINGS
+═══════════════════════════════════════════════
+- App Language (for UI strings – use Flutter localization with .arb files for 29 languages)
+- AI Response Language (the language the AI writes in)
+- Voice Language (the language/code used by flutter_tts)
+- Font Size slider (14-30)
+- Volume, Pitch, Speech Rate sliders for TTS
+- Dark Mode / Light Mode toggle
+- Clear All Notes button
+- App Version info
+
+═══════════════════════════════════════════════
+VOICE / READ-ALOUD SYSTEM
+═══════════════════════════════════════════════
+When the user taps "Read Aloud" on any AI response, the app uses flutter_tts to speak the text. Before speaking, the text is cleaned:
+- Remove markdown syntax but keep line breaks.
+- For non-English languages, use the on-device ML Kit Translation to convert to the Voice Language if needed (or, if AI already responded in that language, just speak it).
+- Use the voice parameters from Settings (pitch, rate, volume).
+
+Implement stop/resume functionality: a small chip appears at the top of the screen while TTS is active, with Stop and Resume buttons.
+
+═══════════════════════════════════════════════
+ADDITIONAL FEATURES
+═══════════════════════════════════════════════
+- The app should cache the last page context so that if the user closes the app and reopens, the previous session is restored.
+- Error handling: if the Groq API is unreachable, show a friendly message. If the API key expires, show a different message.
+- Use Inter font (google_fonts) throughout.
+- Use Material 3 design.
+- The app must be completely offline-capable for the UI (except API calls obviously).
+- Add a simple splash screen with the app logo (you can generate a placeholder icon).
+
+═══════════════════════════════════════════════
+WHAT TO BUILD FIRST (order of screens)
+═══════════════════════════════════════════════
+1. main.dart with bottom navigation and theme.
+2. ScannerScreen with image picker, OCR integration, and Groq API call.
+3. NotebookScreen with local JSON storage and AI assistant editing.
+4. SettingsScreen with all values persisted.
+5. QuizScreen and ExamScreen.
+6. TtsService with all voice controls.
+
+After building the entire app, verify that `flutter build apk --release` succeeds.
+
+Do NOT add any real AdMob logic. Just leave commented placeholders.
+
+IMPORTANT: Use the exact Groq API key and model provided. Do NOT use environment variables; hardcode the key.
+
+Now build the complete app.

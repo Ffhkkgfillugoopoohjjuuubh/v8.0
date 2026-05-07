@@ -1,0 +1,56 @@
+import 'app_localizations.dart';
+
+class AppLocalizationsBn extends AppLocalizations {
+  AppLocalizationsBn() : super('bn');
+
+  @override String get appTitle => 'Echo AI';
+  @override String get scanner => 'স্ক্যানার';
+  @override String get notebook => 'নোটবুক';
+  @override String get settings => 'সেটিংস';
+  @override String get tapToScan => 'পেজ স্ক্যান করতে ট্যাপ করুন';
+  @override String get addPhotos => 'ছবি যোগ করুন (সর্বোচ্চ ১০)';
+  @override String get generateQuiz => 'কুইজ তৈরি করুন';
+  @override String get readAloud => 'জোরে পড়ুন';
+  @override String get addToNote => 'নোটে যোগ করুন';
+  @override String get copy => 'কপি করুন';
+  @override String get aiResponseLanguage => 'AI উত্তর ভাষা';
+  @override String get voiceLanguage => 'ভয়েস ভাষা';
+  @override String get appLanguage => 'অ্যাপ ভাষা';
+  @override String get darkMode => 'ডার্ক মোড';
+  @override String get fontSize => 'ফন্ট সাইজ';
+  @override String get volume => 'ভলিউম';
+  @override String get pitch => 'পিচ';
+  @override String get speechRate => 'কথার গতি';
+  @override String get clearAllNotes => 'সব নোট মুছুন';
+  @override String get appVersion => 'অ্যাপ সংস্করণ';
+  @override String get save => 'সংরক্ষণ করুন';
+  @override String get cancel => 'বাতিল';
+  @override String get delete => 'মুছুন';
+  @override String get edit => 'সম্পাদনা করুন';
+  @override String get newNote => 'নতুন নোট';
+  @override String get searchNotes => 'নোট খুঁজুন...';
+  @override String get subject => 'বিষয়';
+  @override String get aiAssistant => 'AI সহকারী';
+  @override String get askAboutThisPage => 'এই পেজ সম্পর্কে জিজ্ঞেস করুন...';
+  @override String get echoAiIsThinking => 'Echo AI ভাবছে...';
+  @override String get readingAloud => 'জোরে পড়ছে...';
+  @override String get paused => 'বিরতি';
+  @override String get stop => 'থামুন';
+  @override String get resume => 'আবার শুরু করুন';
+  @override String get pause => 'বিরতি';
+  @override String get numberOfQuestions => 'প্রশ্নের সংখ্যা';
+  @override String get timeLimitMinutes => 'সময় সীমা (মিনিট)';
+  @override String get generate => 'তৈরি করুন';
+  @override String get submit => 'জমা দিন';
+  @override String get next => 'পরবর্তী';
+  @override String get prev => 'পূর্ববর্তী';
+  @override String get reviewAnswers => 'উত্তর পর্যালোচনা';
+  @override String get aiFeedback => 'AI মতামত';
+  @override String get excellent => 'অসাধারণ!';
+  @override String get goodJob => 'ভালো কাজ!';
+  @override String get keepPracticing => 'অনুশীলন চালিয়ে যান!';
+  @override String get backToScanner => 'স্ক্যানারে ফিরুন';
+  @override String get copiedToClipboard => 'ক্লিপবোর্ডে কপি হয়েছে';
+  @override String get savedToNotebook => 'নোটবুকে সংরক্ষিত!';
+  @override String get allNotesDeleted => 'সব নোট মুছে গেছে';
+}

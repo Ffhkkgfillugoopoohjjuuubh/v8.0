@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "k5UhiUqOgmfvQ7z_A9Sen"
+uri = "file://echo_ai_flutter.tar.gz"
+type = "unspecified"
+title = "Echo AI — Complete Flutter Source Code"

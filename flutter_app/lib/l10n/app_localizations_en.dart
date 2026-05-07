@@ -1,0 +1,56 @@
+import 'app_localizations.dart';
+
+class AppLocalizationsEn extends AppLocalizations {
+  AppLocalizationsEn() : super('en');
+
+  @override String get appTitle => 'Echo AI';
+  @override String get scanner => 'Scanner';
+  @override String get notebook => 'Notebook';
+  @override String get settings => 'Settings';
+  @override String get tapToScan => 'Tap to scan a page';
+  @override String get addPhotos => 'Add photos (max 10)';
+  @override String get generateQuiz => 'Generate Quiz';
+  @override String get readAloud => 'Read Aloud';
+  @override String get addToNote => 'Add to Note';
+  @override String get copy => 'Copy';
+  @override String get aiResponseLanguage => 'AI Response Language';
+  @override String get voiceLanguage => 'Voice Language';
+  @override String get appLanguage => 'App Language';
+  @override String get darkMode => 'Dark Mode';
+  @override String get fontSize => 'Font Size';
+  @override String get volume => 'Volume';
+  @override String get pitch => 'Pitch';
+  @override String get speechRate => 'Speech Rate';
+  @override String get clearAllNotes => 'Clear All Notes';
+  @override String get appVersion => 'App Version';
+  @override String get save => 'Save';
+  @override String get cancel => 'Cancel';
+  @override String get delete => 'Delete';
+  @override String get edit => 'Edit';
+  @override String get newNote => 'New Note';
+  @override String get searchNotes => 'Search notes...';
+  @override String get subject => 'Subject';
+  @override String get aiAssistant => 'AI Assistant';
+  @override String get askAboutThisPage => 'Ask about this page...';
+  @override String get echoAiIsThinking => 'Echo AI is thinking...';
+  @override String get readingAloud => 'Reading aloud...';
+  @override String get paused => 'Paused';
+  @override String get stop => 'Stop';
+  @override String get resume => 'Resume';
+  @override String get pause => 'Pause';
+  @override String get numberOfQuestions => 'Number of Questions';
+  @override String get timeLimitMinutes => 'Time Limit (minutes)';
+  @override String get generate => 'Generate';
+  @override String get submit => 'Submit';
+  @override String get next => 'Next';
+  @override String get prev => 'Previous';
+  @override String get reviewAnswers => 'Review Answers';
+  @override String get aiFeedback => 'AI Feedback';
+  @override String get excellent => 'Excellent!';
+  @override String get goodJob => 'Good Job!';
+  @override String get keepPracticing => 'Keep Practicing!';
+  @override String get backToScanner => 'Back to Scanner';
+  @override String get copiedToClipboard => 'Copied to clipboard';
+  @override String get savedToNotebook => 'Saved to Notebook!';
+  @override String get allNotesDeleted => 'All notes deleted';
+}
