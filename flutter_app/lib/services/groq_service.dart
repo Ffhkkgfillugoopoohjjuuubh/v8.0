@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-// TODO: Replace with your actual Groq API key from environment or secure storage
-const String _kGroqApiKey = 'YOUR_GROQ_API_KEY_HERE';
+const String _kGroqApiKey = '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';
 const String _kGroqEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
 const String _kGroqModel = 'openai/gpt-oss-120b';
 
