@@ -28,7 +28,7 @@ export async function groqChat(messages: ApiMessage[]): Promise<string> {
       body: JSON.stringify({
         model: GROQ_MODEL,
         messages,
-        temperature: 0.7,
+        temperature: 0.3,
         max_tokens: 2048,
       }),
     });
@@ -51,13 +51,13 @@ export async function groqChat(messages: ApiMessage[]): Promise<string> {
   }
 }
 
-export function buildSystemPrompt(language: string, tone: Tone, pageContext?: string): string {
+export function buildSystemPrompt(language: string, tone: Tone): string {
   const style =
     tone === "casual"
       ? "Use casual, everyday spoken words. Keep ALL scientific and technical terms in English."
       : "Use formal, academic language. Translate all terms, including scientific ones, into this language.";
 
-  let prompt = `You are Echo AI, a brilliant, patient teacher.
+  return `You are Echo AI, a brilliant, patient teacher.
 You MUST write your entire answer in ${language}.
 ${style}
 Your answer must be beautifully structured, like this:
@@ -66,20 +66,14 @@ First, give the direct answer or explanation.
 
 Then, break the concept into clear, numbered steps.
 
+For any math, physics, or grammar problem on the page, solve it step-by-step with full reasoning.
+
 End with a short summary and one encouraging question.
 Use bold for important words.
 Use bullet points for lists.
 Keep paragraphs short and readable.
-Never use LaTeX or special symbols.
-Write fractions as (a)/(b).
-Write square roots as sqrt(x).
-If the user asked a question from a textbook page you have seen, use the page context to answer.`;
-
-  if (pageContext && pageContext.trim()) {
-    prompt += `\n\nPAGE CONTEXT (text extracted from the user's uploaded image):\n${pageContext.trim()}`;
-  }
-
-  return prompt;
+Never use LaTeX or special symbols. Write fractions as (a)/(b). Write square roots as sqrt(x).
+If the user's question refers to the textbook page you have seen, use the page context to answer.`;
 }
 
 export const AI_RESPONSE_LANGUAGES = [

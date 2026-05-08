@@ -1,0 +1,124 @@
+You are fixing and finishing the Echo AI web app. Follow every instruction in this message. Do not skip anything. Do not add extra features.
+
+══════════════════════════════════════════════════
+1. HOW THE APP MUST WORK (the user flow)
+══════════════════════════════════════════════════
+A. User taps "Add Images" and selects one or more photos (up to 10).
+B. Immediately after selecting each photo, Tesseract.js runs OCR on it automatically.
+   There is NO "Extract Text" button. OCR runs instantly.
+C. While OCR is running, show a small spinner and the text "Reading text from image..."
+D. When OCR finishes, the extracted text is added to a hidden context called `currentPageContext`.
+   Also show the extracted text in a small, collapsible, read-only area so the user can verify it.
+E. The user types a question or instruction in the input field (e.g. "Explain this page in simple Bengali").
+F. The user selects the language from a SINGLE dropdown called "AI Response & Voice Language".
+   There is no separate "Voice Language" setting.
+G. The user can toggle a switch labelled "Casual / Formal".
+   Casual (default): scientific/technical terms stay in English (e.g. "acceleration" written in English inside a Bengali sentence).
+   Formal: everything is translated into the selected language (including scientific terms).
+H. The user taps "Send". Only then is the Groq API called.
+I. The Groq API response is displayed in a chat-like bubble, beautifully formatted (like ChatGPT).
+J. Below every AI response, there are three small buttons: "Copy", "Save to Notebook", and "Read Aloud" (speaker icon).
+K. When the user taps "Read Aloud", the browser's SpeechSynthesis API speaks the AI response text.
+   BEFORE speaking, the text is cleaned: all markdown symbols (** , * , # , ` , ```, -, >) are removed.
+   The spoken language matches the selected "AI Response & Voice Language".
+   While speaking, a small status bar appears with "Stop / Pause / Resume" buttons.
+   The voice must sound natural, not robotic. No API cost is involved.
+
+══════════════════════════════════════════════════
+2. OCR – ONLY Tesseract.js, NO external API
+══════════════════════════════════════════════════
+- Use Tesseract.js already loaded in the project.
+- Do NOT use Groq Vision, Google Vision, or any paid OCR API.
+- OCR must run immediately after an image is selected.
+- If Tesseract fails, show a clear error message and do NOT call the Groq API.
+
+══════════════════════════════════════════════════
+3. GROQ API CALL
+══════════════════════════════════════════════════
+- Use the hardcoded Groq API key and endpoint from the existing config file.
+- Model: openai/gpt-oss-120b
+- Temperature: 0.3 (to keep answers accurate but not too robotic)
+
+The system prompt sent to Groq must be:
+You are Echo AI, a brilliant, patient teacher.
+You MUST write your entire answer in {language}.
+{style}
+Your answer must be beautifully structured, like this:
+
+First, give the direct answer or explanation.
+
+Then, break the concept into clear, numbered steps.
+
+For any math, physics, or grammar problem on the page, solve it step-by-step with full reasoning.
+
+End with a short summary and one encouraging question.
+Use bold for important words.
+Use bullet points for lists.
+Keep paragraphs short and readable.
+Never use LaTeX or special symbols. Write fractions as (a)/(b). Write square roots as sqrt(x).
+If the user's question refers to the textbook page you have seen, use the page context to answer.
+
+text
+
+Where {language} is the selected language (e.g. "Bengali", "Hindi", "English").
+Where {style} is:
+- If Casual: "Use casual, everyday spoken words. Keep ALL scientific and technical terms in English."
+- If Formal: "Use formal, academic language. Translate all terms, including scientific ones, into this language."
+
+- The user message sent to Groq is the combination of the extracted page text (if any) and the user's prompt.
+  Format: "Page content: [extracted text]\n\nUser question: [user's prompt]"
+
+══════════════════════════════════════════════════
+4. READ ALOUD – MUST WORK IMMEDIATELY
+══════════════════════════════════════════════════
+- In the JavaScript code, find the function that handles the "Read Aloud" button.
+- REPLACE its content with this exact logic:
+function speakText(text, langCode) {
+// 1. Clean the text of all markdown symbols
+const cleaned = text
+.replace(/**/g, '')
+.replace(/*/g, '')
+.replace(/##?\s/g, '')
+.replace(/{1,3}[^]`{1,3}/g, '')
+.replace(/[-*]\s/g, '')
+.replace(/([^]+)]
+[
+)
+]
++
+[ 
+)
+ ]+/g, '1') .replace(/!\[([^\]]+)\]\([^)]+\)/g, '1')
+.replace(/\n{2,}/g, '\n')
+.trim();
+
+// 2. Stop any previous speech
+window.speechSynthesis.cancel();
+
+// 3. Create a new utterance
+const utterance = new SpeechSynthesisUtterance(cleaned);
+utterance.lang = langCode; // e.g. 'bn-IN', 'hi-IN', 'en-US'
+utterance.rate = 0.9; // slightly slower for clarity
+utterance.pitch = 1.0;
+
+// 4. Speak
+window.speechSynthesis.speak(utterance);
+}
+
+text
+
+- Map the selected language to a BCP-47 language code for SpeechSynthesis:
+  "English" -> "en-US"
+  "Bengali" -> "bn-IN"
+  "Hindi" -> "hi-IN"
+  "Tamil" -> "ta-IN"
+  ... (and so on for all 29 languages)
+- The "Read Aloud" button must call this function with the AI response text and the correct language code.
+- A status bar (Stop/Pause/Resume) must appear when speech is active and disappear when speech ends.
+
+══════════════════════════════════════════════════
+5. FINAL CHECKS
+══════════════════════════════════════════════════
+- The app must NOT auto-send anything. The user must click "Send".
+- There must be no dummy or placeholder data; everything must be functional.
+- After making all changes, restart the app and give me the live URL.
