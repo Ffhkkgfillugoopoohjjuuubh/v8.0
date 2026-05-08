@@ -23,6 +23,7 @@ class ScannerScreen extends StatefulWidget {
 class _ScannerScreenState extends State<ScannerScreen> {
   final List<File> _images = [];
   String _currentPageContext = '';
+  String _extractedText = '';
   final List<Map<String, String>> _chatHistory = [];
   final TextEditingController _promptController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -86,7 +87,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
         }
         final img = await _picker.pickImage(source: ImageSource.camera, imageQuality: 90);
         if (img == null) return;
-        setState(() => _images.add(File(img.path)));
+        setState(() {
+          _images.add(File(img.path));
+        });
       }
       await _runOcr();
     } catch (e) {
@@ -99,21 +102,30 @@ class _ScannerScreenState extends State<ScannerScreen> {
     setState(() => _isOcrLoading = true);
     try {
       final text = await OcrService.extractTextFromImages(_images);
-      setState(() => _currentPageContext = text);
+      setState(() {
+        _currentPageContext = text;
+        _extractedText = text;
+      });
       await _persistSession();
     } catch (e) {
-      _showError('Text extraction failed. Please try again.');
+      setState(() => _extractedText = '');
+      _showError('Could not read text from image. You can still ask questions.');
     } finally {
       setState(() => _isOcrLoading = false);
     }
   }
 
   Future<void> _sendPrompt() async {
-    final prompt = _promptController.text.trim();
+    var prompt = _promptController.text.trim();
     if (prompt.isEmpty) return;
     if (_currentPageContext.isEmpty && _chatHistory.isEmpty) {
       _showError('Please add images first or start a conversation.');
       return;
+    }
+
+    // Prepend extracted text to the prompt as context if available
+    if (_extractedText.isNotEmpty) {
+      prompt = '$_extractedText\n\nUser question: $prompt';
     }
 
     _promptController.clear();
@@ -125,9 +137,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
     try {
       final hasMath = GroqService.detectsMath(_currentPageContext + prompt);
+      final settings = context.read<SettingsProvider>();
       final systemPrompt = GroqService.buildSystemPrompt(
         language: _aiResponseLanguage,
         hasMath: hasMath,
+        formalStyle: settings.aiStyleFormal,
       );
 
       final messages = <Map<String, String>>[
@@ -397,20 +411,20 @@ Return ONLY the JSON array, no other text.''';
               backgroundColor: colorScheme.surfaceContainerHighest,
               color: colorScheme.primary,
             ),
-          if (_isOcrLoading)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              color: colorScheme.primaryContainer.withOpacity(0.3),
-              child: Row(
-                children: [
-                  const SizedBox(width: 4),
-                  Text(
-                    'Extracting text from ${_images.length} image(s)...',
-                    style: TextStyle(fontSize: 12, color: colorScheme.onPrimaryContainer),
-                  ),
-                ],
-              ),
-            ),
+           if (_isOcrLoading)
+             Container(
+               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+               color: colorScheme.primaryContainer.withOpacity(0.3),
+               child: Row(
+                 children: [
+                   const SizedBox(width: 4),
+                   Text(
+                     'Reading text from image…',
+                     style: TextStyle(fontSize: 12, color: colorScheme.onPrimaryContainer),
+                   ),
+                 ],
+               ),
+             ),
           Expanded(
             child: _chatHistory.isEmpty && _currentPageContext.isEmpty
                 ? _buildEmptyState()
@@ -743,7 +757,6 @@ Return ONLY the JSON array, no other text.''';
   }
 
   Future<void> _addToNote(String content) async {
-    String subject = 'General';
     final controller = TextEditingController();
     await showDialog(
       context: context,
@@ -761,7 +774,6 @@ Return ONLY the JSON array, no other text.''';
                 hintText: 'e.g. Physics - Newton\'s Laws',
               ),
               autofocus: true,
-              onChanged: (v) => subject = v,
             ),
           ],
         ),
@@ -896,21 +908,22 @@ class _ChatBubble extends StatelessWidget {
           Wrap(
             spacing: 4,
             children: [
-              _ActionChip(
-                icon: Icons.volume_up_outlined,
-                label: 'Read',
-                onPressed: () {
-                  final tts = context.read<TtsProvider>();
-                  final settings = context.read<SettingsProvider>();
-                  tts.speak(
-                    text: content,
-                    languageCode: settings.voiceLanguage,
-                    volume: settings.volume,
-                    pitch: settings.pitch,
-                    rate: settings.speechRate,
-                  );
-                },
-              ),
+               _ActionChip(
+                 icon: Icons.volume_up_outlined,
+                 label: 'Read',
+                 onPressed: () {
+                   final tts = context.read<TtsProvider>();
+                   final settings = context.read<SettingsProvider>();
+                   tts.speak(
+                     text: content,
+                     languageCode: settings.voiceLanguage,
+                     volume: settings.volume,
+                     pitch: settings.pitch,
+                     rate: settings.speechRate,
+                     aiLanguage: aiLanguage,
+                   );
+                 },
+               ),
               if (onAddToNote != null)
                 _ActionChip(
                   icon: Icons.bookmark_add_outlined,

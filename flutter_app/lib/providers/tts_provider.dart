@@ -3,6 +3,39 @@ import 'package:flutter_tts/flutter_tts.dart';
 
 enum TtsState { playing, paused, stopped }
 
+// Map AI response language names to BCP-47 language codes for TTS
+const Map<String, String> kLanguageToBcp47 = {
+  'English': 'en-US',
+  'Hindi': 'hi-IN',
+  'Bengali': 'bn-IN',
+  'Tamil': 'ta-IN',
+  'Telugu': 'te-IN',
+  'Kannada': 'kn-IN',
+  'Malayalam': 'ml-IN',
+  'Marathi': 'mr-IN',
+  'Gujarati': 'gu-IN',
+  'Punjabi': 'pa-IN',
+  'Odia': 'or-IN',
+  'Assamese': 'as-IN',
+  'Urdu': 'ur-PK',
+  'Arabic': 'ar-SA',
+  'French': 'fr-FR',
+  'Spanish': 'es-ES',
+  'German': 'de-DE',
+  'Japanese': 'ja-JP',
+  'Korean': 'ko-KR',
+  'Chinese': 'zh-CN',
+  'Portuguese': 'pt-BR',
+  'Russian': 'ru-RU',
+  'Dutch': 'nl-NL',
+  'Turkish': 'tr-TR',
+  'Vietnamese': 'vi-VN',
+  'Thai': 'th-TH',
+  'Indonesian': 'id-ID',
+  'Polish': 'pl-PL',
+  'Swedish': 'sv-SE',
+};
+
 class TtsProvider extends ChangeNotifier {
   final FlutterTts _tts = FlutterTts();
   TtsState _state = TtsState.stopped;
@@ -33,10 +66,17 @@ class TtsProvider extends ChangeNotifier {
     double volume = 1.0,
     double pitch = 1.0,
     double rate = 0.5,
+    String? aiLanguage,
   }) async {
     final cleaned = _cleanText(text);
     _currentText = cleaned;
-    await _tts.setLanguage(languageCode);
+    
+    // Use aiLanguage to map to BCP-47 code if provided, otherwise use languageCode directly
+    final finalLanguageCode = aiLanguage != null 
+        ? kLanguageToBcp47[aiLanguage] ?? languageCode 
+        : languageCode;
+    
+    await _tts.setLanguage(finalLanguageCode);
     await _tts.setVolume(volume);
     await _tts.setPitch(pitch);
     await _tts.setSpeechRate(rate);
@@ -66,19 +106,42 @@ class TtsProvider extends ChangeNotifier {
   }
 
   String _cleanText(String text) {
-    // Remove markdown syntax but keep line breaks
-    return text
-        .replaceAll(RegExp(r'\*\*(.+?)\*\*'), r'\1')
-        .replaceAll(RegExp(r'\*(.+?)\*'), r'\1')
-        .replaceAll(RegExp(r'__(.+?)__'), r'\1')
-        .replaceAll(RegExp(r'_(.+?)_'), r'\1')
+    // Remove markdown syntax but keep line breaks for natural flow
+    var cleaned = text
+        // Remove bold markdown
+        .replaceAll(RegExp(r'\*\*(.+?)\*\*'), r'$1')
+        .replaceAll(RegExp(r'\*(.+?)\*'), r'$1')
+        // Remove italic markdown
+        .replaceAll(RegExp(r'__(.+?)__'), r'$1')
+        .replaceAll(RegExp(r'_(.+?)_'), r'$1')
+        // Remove header markdown
         .replaceAll(RegExp(r'#+\s'), '')
-        .replaceAll(RegExp(r'`(.+?)`'), r'\1')
+        // Remove inline code
+        .replaceAll(RegExp(r'`(.+?)`'), r'$1')
+        // Remove code blocks
         .replaceAll(RegExp(r'```[\s\S]*?```'), '')
-        .replaceAll(RegExp(r'\[(.+?)\]\(.+?\)'), r'\1')
+        // Remove links
+        .replaceAll(RegExp(r'\[(.+?)\]\(.+?\)'), r'$1')
+        // Remove images
         .replaceAll(RegExp(r'!\[.+?\]\(.+?\)'), '')
+        // Remove blockquotes
         .replaceAll(RegExp(r'>+\s'), '')
+        // Remove LaTeX artifacts
+        .replaceAll('\\frac{', '(')
+        .replaceAll('\\sqrt{', 'sqrt(')
+        .replaceAll('\\(', '')
+        .replaceAll('\\)', '')
+        .replaceAll('\\[', '')
+        .replaceAll('\\]', '')
+        // Remove display math delimiters
+        .replaceAll(r'$$', '')
+        // Remove inline math delimiters
+        .replaceAll(r'$', '')
+        // Remove stray backslashes
+        .replaceAll('\\', '')
         .trim();
+    
+    return cleaned;
   }
 
   @override

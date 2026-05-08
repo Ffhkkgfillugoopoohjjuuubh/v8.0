@@ -28,17 +28,27 @@ class SettingsScreen extends StatelessWidget {
             )).toList(),
             onChanged: (v) => settings.setAppLanguage(v!),
           ),
-          _DropdownTile(
-            icon: Icons.translate,
-            title: 'AI Response Language',
-            subtitle: 'Language for AI answers',
-            value: settings.aiResponseLanguage,
-            items: kAiResponseLanguages.map((l) => DropdownMenuItem(
-              value: l,
-              child: Text(l),
-            )).toList(),
-            onChanged: (v) => settings.setAiResponseLanguage(v!),
-          ),
+           _DropdownTile(
+             icon: Icons.translate,
+             title: 'AI Response Language',
+             subtitle: 'Language for AI answers',
+             value: settings.aiResponseLanguage,
+             items: kAiResponseLanguages.map((l) => DropdownMenuItem(
+               value: l,
+               child: Text(l),
+             )).toList(),
+             onChanged: (v) => settings.setAiResponseLanguage(v!),
+           ),
+           SwitchListTile(
+             secondary: Icon(
+               settings.aiStyleFormal ? Icons.school : Icons.chat,
+               color: colorScheme.primary,
+             ),
+             title: const Text('AI Style'),
+             subtitle: Text(settings.aiStyleFormal ? 'Formal academic language' : 'Casual everyday language'),
+             value: settings.aiStyleFormal,
+             onChanged: settings.setAiStyleFormal,
+           ),
           _DropdownTile(
             icon: Icons.record_voice_over,
             title: 'Voice Language',

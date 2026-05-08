@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-const String _kGroqApiKey = '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';
+// TODO: Replace with your actual Groq API key from environment or secure storage
+const String _kGroqApiKey = 'YOUR_GROQ_API_KEY_HERE';
 const String _kGroqEndpoint = 'https://api.groq.com/openai/v1/chat/completions';
 const String _kGroqModel = 'openai/gpt-oss-120b';
 
@@ -59,38 +60,47 @@ class GroqService {
   static String buildSystemPrompt({
     required String language,
     required bool hasMath,
+    bool formalStyle = false,
     String? additionalInstructions,
   }) {
-    final mathInstructions = hasMath
-        ? '''
-When mathematical or physics problems are detected in the content:
-- Solve EVERY problem completely, step by step.
-- Show the formula, substitute values, show each solving step clearly.
-- Write the final answer in bold (using **answer**).
-- Write fractions as (numerator)/(denominator), e.g. (3)/(4).
-- Write square root as sqrt(), e.g. sqrt(16) = 4.
-- Do NOT use LaTeX or complex math notation.
-- If a problem is ambiguous, explain the concept and state why it cannot be solved precisely.
-'''
-        : '';
+    final styleInstructions = formalStyle
+        ? 'Use formal academic language. Translate ALL terms, including scientific ones, into $language.'
+        : 'Use casual, everyday spoken words. Keep ALL scientific and technical terms in ENGLISH (written in English letters). Never translate scientific terms. All other words must be in $language.';
 
-    return '''You are Echo AI, an expert educational assistant.
+    return r'''You are Echo AI, a brilliant, patient teacher.
+You MUST write your ENTIRE answer in ''' + language + r'''.
+''' + styleInstructions + r'''
 
-RESPONSE LANGUAGE: Always respond in $language. Use the casual, everyday form of the language. 
-For Indian languages, keep scientific terms, equations, and technical units in English.
+YOUR ANSWER MUST BE STRUCTURED LIKE THIS:
 
-FORMATTING RULES:
-- Use plain text with markdown for structure (bold, lists, headers).
-- Do NOT use LaTeX. Write math in plain text format.
-- Fractions: write as (a)/(b). Square roots: write as sqrt(x).
-- Use **bold** for important terms and final answers.
-- Use numbered lists for steps.
-- Keep responses clear, concise, and educational.
+Give the direct answer or explanation in the FIRST sentence.
 
-$mathInstructions
-${additionalInstructions ?? ''}
+Then explain the concept in clear, numbered steps.
 
-Always be helpful, encouraging, and accurate. If unsure, say so clearly.''';
+For any math or physics problem on the page, solve it step-by-step.
+
+End with a short summary and one encouraging question.
+
+FORMAT:
+
+Use bold for important words.
+
+Use bullet points for lists.
+
+Keep paragraphs short.
+
+NEVER use LaTeX. NEVER use \frac, \sqrt, $$, $.
+
+NEVER write dollar signs or backslashes in your answer.
+
+Write fractions as (a)/(b) with parentheses.
+
+Write square roots as sqrt(x).
+
+Write powers as x^2.
+
+If the user is working from a textbook page you have seen, use that page context to answer.
+''';
   }
 
   static bool detectsMath(String text) {

@@ -11,6 +11,7 @@ class SettingsProvider extends ChangeNotifier {
   String _appLanguage = 'en';
   String _aiResponseLanguage = 'English';
   String _voiceLanguage = 'en-US';
+  bool _aiStyleFormal = false;
   double _fontSize = 16.0;
   double _volume = 1.0;
   double _pitch = 1.0;
@@ -20,6 +21,7 @@ class SettingsProvider extends ChangeNotifier {
   String get appLanguage => _appLanguage;
   String get aiResponseLanguage => _aiResponseLanguage;
   String get voiceLanguage => _voiceLanguage;
+  bool get aiStyleFormal => _aiStyleFormal;
   double get fontSize => _fontSize;
   double get volume => _volume;
   double get pitch => _pitch;
@@ -30,6 +32,7 @@ class SettingsProvider extends ChangeNotifier {
     _appLanguage = _prefs.getString('appLanguage') ?? 'en';
     _aiResponseLanguage = _prefs.getString('aiResponseLanguage') ?? 'English';
     _voiceLanguage = _prefs.getString('voiceLanguage') ?? 'en-US';
+    _aiStyleFormal = _prefs.getBool('aiStyleFormal') ?? false;
     _fontSize = _prefs.getDouble('fontSize') ?? 16.0;
     _volume = _prefs.getDouble('volume') ?? 1.0;
     _pitch = _prefs.getDouble('pitch') ?? 1.0;
@@ -46,6 +49,12 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> setAiResponseLanguage(String val) async {
     _aiResponseLanguage = val;
     await _prefs.setString('aiResponseLanguage', val);
+    notifyListeners();
+  }
+
+  Future<void> setAiStyleFormal(bool val) async {
+    _aiStyleFormal = val;
+    await _prefs.setBool('aiStyleFormal', val);
     notifyListeners();
   }
 
