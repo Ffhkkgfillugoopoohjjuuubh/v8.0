@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "_jrjcKmGY-_vAfhypA00o"
+uri = "file://artifacts/echo-ai-mobile/assets/images/icon.png"
+type = "image"
+title = "echo ai mobile icon"
 
 [[outputs]]
 id = "k5UhiUqOgmfvQ7z_A9Sen"
