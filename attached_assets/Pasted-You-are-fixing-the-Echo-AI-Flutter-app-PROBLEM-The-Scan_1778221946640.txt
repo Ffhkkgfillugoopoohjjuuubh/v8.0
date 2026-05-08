@@ -1,0 +1,43 @@
+You are fixing the Echo AI Flutter app.
+
+PROBLEM: The Scanner screen has no text input field. The user cannot type a
+question or send a message. The input field only appears sometimes after an
+image is processed, and there is no way to chat without an image.
+
+FIX THESE THINGS:
+
+1. ALWAYS SHOW THE CHAT INPUT FIELD
+   - At the bottom of the Scanner screen, there MUST be a text input field
+     and a Send button that are ALWAYS visible, even before any image is added.
+   - The input field should have a placeholder text like "Ask anything or
+     add a photo..."
+   - The user can type a question and tap Send at any time, with or without
+     an image.
+
+2. ALLOW TEXT-ONLY QUESTIONS (NO IMAGE REQUIRED)
+   - The user must be able to ask any question freely, just like a normal
+     AI chat. They do NOT need to upload an image first.
+   - If there is extracted text from a photo, send it as context along with
+     the user's message.
+   - If there is NO image, just send the user's question directly to the
+     Groq API with the selected language and casual/formal preference.
+
+3. KEEP EXISTING FEATURES WORKING
+   - "Add Images" button must still work (camera/gallery, up to 10 photos).
+   - OCR must still run automatically and store the extracted text.
+   - The "Show extracted text" toggle must still show the text.
+   - Language dropdown (English, Bengali, etc.) must still work.
+   - Casual/Formal toggle must still work.
+   - Quiz button must still generate a quiz from the page context.
+   - Notebook and Settings tabs must stay as they are.
+
+4. MAKE SURE THE UI LOOKS RIGHT
+   - The input field should be at the bottom of the screen, above the
+     bottom navigation bar, like a normal chat app.
+   - The "Add Images" button and language dropdown should be above the
+     chat area, not hidden.
+
+5. AFTER FIXING
+   - Restart the app and give me the new live URL.
+   - The input field and Send button must be immediately visible when the
+     app opens.

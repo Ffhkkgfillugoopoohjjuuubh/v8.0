@@ -1,8 +1,7 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList,
-  ActivityIndicator, Alert, Pressable, Platform, Image, ScrollView,
-  Animated,
+  ActivityIndicator, Alert, Platform, ScrollView,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -40,12 +39,17 @@ function makeId() {
   return Date.now().toString() + Math.random().toString(36).substring(2, 9);
 }
 
+// Tab bar height to push content above it
+const TAB_BAR_HEIGHT_WEB = 84;
+const TAB_BAR_HEIGHT_NATIVE = 60;
+
 export default function ScannerScreen() {
   const colors = useColors();
   const { settings, updateSettings } = useApp();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { speak, stop, pause, resume, ttsState, activeMsgId } = useTts();
+  const isWeb = Platform.OS === "web";
 
   const [images, setImages] = useState<OcrImage[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -63,14 +67,17 @@ export default function ScannerScreen() {
     .join("\n\n");
 
   const anyRunning = images.some((img) => img.status === "reading");
+  const hasImages = images.length > 0;
+  const hasContent = hasImages || messages.length > 0;
 
-  // OCR using browser-compatible approach (no native ML Kit in Expo Go)
+  // Tab bar extra bottom offset
+  const tabBarHeight = isWeb ? TAB_BAR_HEIGHT_WEB : TAB_BAR_HEIGHT_NATIVE;
+
   async function runOcr(item: OcrImage) {
-    // In Expo Go, we use a fallback approach - update status to indicate image added
     setImages((prev) =>
       prev.map((img) =>
         img.id === item.id
-          ? { ...img, status: "done", text: "[Image loaded. Type your question and ask Echo AI to explain what's in this image.]" }
+          ? { ...img, status: "done", text: "[Image added — describe it or ask Echo AI about it]" }
           : img
       )
     );
@@ -79,31 +86,20 @@ export default function ScannerScreen() {
   async function pickImages() {
     const canAdd = 10 - images.length;
     if (canAdd <= 0) { Alert.alert("Limit", "Maximum 10 images allowed."); return; }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsMultipleSelection: true,
       quality: 0.85,
       selectionLimit: canAdd,
     });
-
     if (result.canceled || !result.assets.length) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
     const newItems: OcrImage[] = result.assets.map((asset) => ({
-      id: makeId(),
-      uri: asset.uri,
-      status: "pending" as const,
-      text: "",
+      id: makeId(), uri: asset.uri, status: "pending" as const, text: "",
     }));
-
     setImages((prev) => [...prev, ...newItems]);
-
-    // Run OCR for each
     for (const item of newItems) {
-      setImages((prev) =>
-        prev.map((img) => img.id === item.id ? { ...img, status: "reading" } : img)
-      );
+      setImages((prev) => prev.map((img) => img.id === item.id ? { ...img, status: "reading" } : img));
       await runOcr(item);
     }
   }
@@ -117,7 +113,6 @@ export default function ScannerScreen() {
 
     const processedPrompt = preprocessMath(q);
     const processedContext = preprocessMath(combinedContext);
-
     const userContent = processedContext
       ? `Page content: ${processedContext}\n\nUser question: ${processedPrompt}`
       : processedPrompt;
@@ -142,10 +137,7 @@ export default function ScannerScreen() {
       setMessages([...updatedMessages, assistantMsg]);
       apiHistoryRef.current.push({ role: "assistant", content: reply });
     } catch (e) {
-      const errText =
-        e instanceof GroqError
-          ? `⚠️ ${e.message}`
-          : "⚠️ Something went wrong. Please try again.";
+      const errText = e instanceof GroqError ? `⚠️ ${e.message}` : "⚠️ Something went wrong. Please try again.";
       setMessages([...updatedMessages, { id: makeId(), role: "assistant", content: errText }]);
     } finally {
       setAiLoading(false);
@@ -185,18 +177,14 @@ export default function ScannerScreen() {
     stop();
   }
 
-  const styles = makeStyles(colors, insets);
-  const hasImages = images.length > 0;
-  const hasContent = hasImages || messages.length > 0;
+  const styles = makeStyles(colors, insets, isWeb, tabBarHeight);
 
   return (
-    <View style={styles.root}>
-      {/* Header */}
+    <KeyboardAvoidingView style={styles.root} behavior="padding" keyboardVerticalOffset={0}>
+      {/* ── Header ── */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>E</Text>
-          </View>
+          <View style={styles.logo}><Text style={styles.logoText}>E</Text></View>
           <Text style={styles.headerTitle}>Echo AI</Text>
         </View>
         <View style={styles.headerRight}>
@@ -220,7 +208,7 @@ export default function ScannerScreen() {
         </View>
       </View>
 
-      {/* TTS status bar */}
+      {/* ── TTS bar ── */}
       {(ttsState === "playing" || ttsState === "paused") && (
         <View style={styles.ttsBar}>
           <Feather name="volume-2" size={13} color={colors.primary} />
@@ -234,7 +222,7 @@ export default function ScannerScreen() {
         </View>
       )}
 
-      {/* Image strip + OCR context */}
+      {/* ── Image strip ── */}
       {hasImages && (
         <OcrImageStrip
           images={images}
@@ -249,102 +237,105 @@ export default function ScannerScreen() {
         />
       )}
 
-      {/* Chat messages */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior="padding"
-        keyboardVerticalOffset={0}
-      >
-        {messages.length === 0 && !hasImages ? (
-          <ScrollView contentContainerStyle={styles.emptyContainer}>
-            <View style={styles.emptyIcon}>
-              <Feather name="camera" size={40} color={colors.primary} />
-            </View>
-            <Text style={styles.emptyTitle}>Scan Any Page</Text>
-            <Text style={styles.emptySubtitle}>
-              Upload a photo of any textbook or question.{"\n"}Echo AI explains it in your language.
-            </Text>
+      {/* ── Chat area (flex: 1) ── */}
+      {messages.length === 0 ? (
+        /* Empty state — fills remaining space above input */
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.emptyContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.emptyIcon}>
+            <Feather name="camera" size={36} color={colors.primary} />
+          </View>
+          <Text style={styles.emptyTitle}>Ask Echo AI anything</Text>
+          <Text style={styles.emptySubtitle}>
+            Type a question below, or add a photo to get step-by-step explanations in your language.
+          </Text>
+          {!hasImages && (
             <TouchableOpacity style={styles.addImagesBtn} onPress={pickImages}>
               <Feather name="image" size={16} color="#fff" />
-              <Text style={styles.addImagesBtnText}>Add Images</Text>
+              <Text style={styles.addImagesBtnText}>Add Photo</Text>
             </TouchableOpacity>
-            <View style={styles.tipsBox}>
-              <Text style={styles.tipsLabel}>Try asking:</Text>
-              {['"Explain this in simple terms"', '"Solve all problems step by step"', '"What are the key points?"'].map((tip) => (
-                <Text key={tip} style={styles.tipText}>→ {tip}</Text>
-              ))}
-            </View>
-          </ScrollView>
-        ) : (
-          <FlatList
-            ref={flatListRef}
-            data={[...messages].reverse()}
-            keyExtractor={(item) => item.id}
-            inverted
-            contentContainerStyle={styles.messageList}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            showsVerticalScrollIndicator={false}
-            ListHeaderComponent={
-              aiLoading ? (
-                <View style={styles.thinkingBubble}>
-                  <View style={styles.thinkingDots}>
-                    {[0, 1, 2].map((i) => (
-                      <View key={i} style={[styles.dot, { opacity: 0.3 + i * 0.25 }]} />
-                    ))}
-                  </View>
+          )}
+          <View style={styles.tipsBox}>
+            <Text style={styles.tipsLabel}>Try asking:</Text>
+            {['"Explain this in simple terms"', '"Solve all problems step by step"', '"What are the key points?"'].map((tip) => (
+              <Text key={tip} style={styles.tipText}>→ {tip}</Text>
+            ))}
+          </View>
+        </ScrollView>
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={[...messages].reverse()}
+          keyExtractor={(item) => item.id}
+          inverted
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.messageList}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            aiLoading ? (
+              <View style={styles.thinkingBubble}>
+                <View style={styles.thinkingDots}>
+                  {[0, 1, 2].map((i) => (
+                    <View key={i} style={[styles.dot, { opacity: 0.3 + i * 0.25 }]} />
+                  ))}
                 </View>
-              ) : null
-            }
-            renderItem={({ item }) => (
-              <MessageBubble
-                message={item}
-                colors={colors}
-                activeMsgId={activeMsgId}
-                ttsState={ttsState}
-                onReadAloud={() => handleReadAloud(item.id, item.content)}
-                onStopTts={stop}
-                onCopy={() => handleCopy(item.content)}
-                onSave={() => handleSaveNote(item.content)}
-                fontSize={settings.fontSize}
-                language={settings.aiLanguage}
-                tone={settings.tone}
-              />
-            )}
-          />
-        )}
+              </View>
+            ) : null
+          }
+          renderItem={({ item }) => (
+            <MessageBubble
+              message={item}
+              colors={colors}
+              activeMsgId={activeMsgId}
+              ttsState={ttsState}
+              onReadAloud={() => handleReadAloud(item.id, item.content)}
+              onStopTts={stop}
+              onCopy={() => handleCopy(item.content)}
+              onSave={() => handleSaveNote(item.content)}
+              fontSize={settings.fontSize}
+              language={settings.aiLanguage}
+              tone={settings.tone}
+            />
+          )}
+        />
+      )}
 
-        {/* Input bar */}
-        <View style={[styles.inputBar, { paddingBottom: insets.bottom + 8 }]}>
-          <TouchableOpacity style={styles.inputIconBtn} onPress={pickImages}>
-            <Feather name="image" size={20} color={colors.primary} />
-          </TouchableOpacity>
-          <TextInput
-            style={[styles.input, { fontSize: Math.max(settings.fontSize, 15) }]}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder={
-              anyRunning ? "Reading image…"
-              : combinedContext ? "Ask anything about this page…"
-              : hasImages ? "Type your question…"
-              : "Add a photo and ask a question…"
-            }
-            placeholderTextColor={colors.mutedForeground}
-            multiline
-            maxLength={2000}
-            onSubmitEditing={sendMessage}
-          />
-          <TouchableOpacity
-            style={[styles.sendBtn, (!inputText.trim() || aiLoading || anyRunning) && styles.sendBtnDisabled]}
-            onPress={sendMessage}
-            disabled={!inputText.trim() || aiLoading || anyRunning}
-          >
-            {aiLoading
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Feather name="send" size={17} color="#fff" />}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+      {/* ── Input bar — ALWAYS VISIBLE ── */}
+      <View style={styles.inputBar}>
+        <TouchableOpacity style={styles.inputIconBtn} onPress={pickImages}>
+          <Feather name="image" size={20} color={colors.primary} />
+        </TouchableOpacity>
+        <TextInput
+          style={[styles.input, { fontSize: Math.max(settings.fontSize - 1, 14) }]}
+          value={inputText}
+          onChangeText={setInputText}
+          placeholder={
+            anyRunning ? "Reading image…"
+            : combinedContext ? "Ask anything about this page…"
+            : "Ask anything or add a photo…"
+          }
+          placeholderTextColor={colors.mutedForeground}
+          multiline
+          maxLength={2000}
+          returnKeyType="send"
+          blurOnSubmit={false}
+          onSubmitEditing={sendMessage}
+        />
+        <TouchableOpacity
+          style={[styles.sendBtn, (!inputText.trim() || aiLoading || anyRunning) && styles.sendBtnDisabled]}
+          onPress={sendMessage}
+          disabled={!inputText.trim() || aiLoading || anyRunning}
+        >
+          {aiLoading
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <Feather name="send" size={17} color="#fff" />}
+        </TouchableOpacity>
+      </View>
 
       <LanguageSheet
         visible={langSheetOpen}
@@ -354,24 +345,20 @@ export default function ScannerScreen() {
         onClose={() => setLangSheetOpen(false)}
         colors={colors}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
-function makeStyles(colors: any, insets: any) {
-  const isWeb = Platform.OS === "web";
+function makeStyles(colors: any, insets: any, isWeb: boolean, tabBarHeight: number) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: colors.background },
     header: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
+      flexDirection: "row", alignItems: "center", justifyContent: "space-between",
       paddingHorizontal: 16,
       paddingTop: isWeb ? 67 : insets.top + 8,
       paddingBottom: 10,
       backgroundColor: colors.card,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
+      borderBottomWidth: 1, borderBottomColor: colors.border,
     },
     headerLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
     logo: { width: 30, height: 30, borderRadius: 10, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
@@ -380,8 +367,7 @@ function makeStyles(colors: any, insets: any) {
     headerRight: { flexDirection: "row", alignItems: "center", gap: 8 },
     langBtn: {
       flexDirection: "row", alignItems: "center", gap: 4,
-      backgroundColor: colors.secondary, paddingHorizontal: 10, paddingVertical: 5,
-      borderRadius: 20,
+      backgroundColor: colors.secondary, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
     },
     langBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 12, color: colors.primary },
     toneBtn: {
@@ -399,37 +385,46 @@ function makeStyles(colors: any, insets: any) {
     },
     ttsBarText: { flex: 1, fontFamily: "Inter_500Medium", fontSize: 12, color: colors.primary },
     ttsAction: { padding: 4 },
-    emptyContainer: { flexGrow: 1, alignItems: "center", justifyContent: "center", padding: 32, gap: 16 },
+
+    // Empty state
+    emptyContainer: {
+      flexGrow: 1, alignItems: "center", justifyContent: "center",
+      padding: 28, gap: 14,
+    },
     emptyIcon: {
-      width: 88, height: 88, borderRadius: 28,
+      width: 80, height: 80, borderRadius: 26,
       backgroundColor: colors.secondary, alignItems: "center", justifyContent: "center",
     },
-    emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 22, color: colors.foreground, textAlign: "center" },
-    emptySubtitle: { fontFamily: "Inter_400Regular", fontSize: 15, color: colors.mutedForeground, textAlign: "center", lineHeight: 22 },
+    emptyTitle: { fontFamily: "Inter_700Bold", fontSize: 20, color: colors.foreground, textAlign: "center" },
+    emptySubtitle: { fontFamily: "Inter_400Regular", fontSize: 14, color: colors.mutedForeground, textAlign: "center", lineHeight: 21 },
     addImagesBtn: {
       flexDirection: "row", alignItems: "center", gap: 8,
-      backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 13,
+      backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 12,
       borderRadius: 14, marginTop: 4,
     },
     addImagesBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 15, color: "#fff" },
-    tipsBox: {
-      backgroundColor: colors.muted, borderRadius: 14, padding: 16, width: "100%", gap: 6,
-    },
-    tipsLabel: { fontFamily: "Inter_600SemiBold", fontSize: 12, color: colors.mutedForeground, marginBottom: 2 },
+    tipsBox: { backgroundColor: colors.muted, borderRadius: 14, padding: 14, width: "100%", gap: 5 },
+    tipsLabel: { fontFamily: "Inter_600SemiBold", fontSize: 11, color: colors.mutedForeground, marginBottom: 2 },
     tipText: { fontFamily: "Inter_400Regular", fontSize: 13, color: colors.mutedForeground },
-    messageList: { padding: 16, gap: 16, paddingBottom: 8 },
+
+    // Messages
+    messageList: { padding: 16, gap: 14, paddingBottom: 8 },
     thinkingBubble: {
       alignSelf: "flex-start", backgroundColor: colors.card,
       borderRadius: 18, borderTopLeftRadius: 4,
       borderWidth: 1, borderColor: colors.border,
-      paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12,
+      paddingHorizontal: 16, paddingVertical: 12, marginBottom: 10,
     },
     thinkingDots: { flexDirection: "row", gap: 6, alignItems: "center" },
     dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary },
+
+    // Input bar — always at bottom, sits on top of tab bar
     inputBar: {
       flexDirection: "row", alignItems: "flex-end", gap: 8,
       paddingHorizontal: 12, paddingTop: 10,
-      backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border,
+      paddingBottom: isWeb ? tabBarHeight + 4 : insets.bottom + 10,
+      backgroundColor: colors.card,
+      borderTopWidth: 1, borderTopColor: colors.border,
     },
     inputIconBtn: { padding: 8, marginBottom: 2 },
     input: {
