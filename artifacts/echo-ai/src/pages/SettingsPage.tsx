@@ -8,7 +8,6 @@ import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
 import { clearAllNotes } from "@/lib/notes";
 import { AI_RESPONSE_LANGUAGES } from "@/lib/groq";
-import { VOICE_LANGUAGES } from "@/lib/settings";
 
 function Section({ title }: { title: string }) {
   return (
@@ -19,12 +18,18 @@ function Section({ title }: { title: string }) {
 }
 
 function Row({ children }: { children: React.ReactNode }) {
-  return <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border last:border-0">{children}</div>;
+  return (
+    <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border last:border-0">
+      {children}
+    </div>
+  );
 }
 
-function SliderRow({ icon: Icon, label, value, min, max, step, display, onChange }: {
-  icon: React.ElementType; label: string; value: number; min: number; max: number; step: number;
-  display: string; onChange: (v: number) => void;
+function SliderRow({
+  icon: Icon, label, value, min, max, step, display, onChange,
+}: {
+  icon: React.ElementType; label: string; value: number; min: number; max: number;
+  step: number; display: string; onChange: (v: number) => void;
 }) {
   return (
     <div className="px-4 py-3 bg-card border-b border-border">
@@ -33,12 +38,7 @@ function SliderRow({ icon: Icon, label, value, min, max, step, display, onChange
         <span className="text-sm">{label}</span>
         <span className="ml-auto text-xs text-muted-foreground font-mono">{display}</span>
       </div>
-      <Slider
-        min={min} max={max} step={step}
-        value={[value]}
-        onValueChange={([v]) => onChange(v)}
-        className="w-full"
-      />
+      <Slider min={min} max={max} step={step} value={[value]} onValueChange={([v]) => onChange(v)} />
     </div>
   );
 }
@@ -60,7 +60,10 @@ export default function SettingsPage() {
           <Row>
             <div className="flex items-center gap-2">
               <Globe size={15} className="text-muted-foreground" />
-              <Label className="text-sm">AI Response Language</Label>
+              <div>
+                <Label className="text-sm">Response Language</Label>
+                <p className="text-[10px] text-muted-foreground">AI replies & read-aloud voice</p>
+              </div>
             </div>
             <Select
               value={settings.aiResponseLanguage}
@@ -76,25 +79,6 @@ export default function SettingsPage() {
               </SelectContent>
             </Select>
           </Row>
-          <Row>
-            <div className="flex items-center gap-2">
-              <Mic size={15} className="text-muted-foreground" />
-              <Label className="text-sm">Voice Language</Label>
-            </div>
-            <Select
-              value={settings.voiceLanguage}
-              onValueChange={(v) => updateSettings({ voiceLanguage: v })}
-            >
-              <SelectTrigger className="w-32 h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-56">
-                {VOICE_LANGUAGES.map((l) => (
-                  <SelectItem key={l.code} value={l.code} className="text-xs">{l.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Row>
         </div>
 
         {/* Appearance */}
@@ -102,7 +86,9 @@ export default function SettingsPage() {
         <div className="bg-card border-y border-border">
           <Row>
             <div className="flex items-center gap-2">
-              {settings.darkMode ? <Moon size={15} className="text-muted-foreground" /> : <Sun size={15} className="text-muted-foreground" />}
+              {settings.darkMode
+                ? <Moon size={15} className="text-muted-foreground" />
+                : <Sun size={15} className="text-muted-foreground" />}
               <Label className="text-sm">Dark Mode</Label>
             </div>
             <Switch
@@ -114,9 +100,7 @@ export default function SettingsPage() {
             icon={Type}
             label="Font Size"
             value={settings.fontSize}
-            min={12}
-            max={28}
-            step={1}
+            min={12} max={28} step={1}
             display={`${settings.fontSize}px`}
             onChange={(v) => updateSettings({ fontSize: v })}
           />
@@ -126,32 +110,20 @@ export default function SettingsPage() {
         <Section title="Text-to-Speech" />
         <div className="bg-card border-y border-border">
           <SliderRow
-            icon={Volume2}
-            label="Volume"
-            value={settings.volume}
-            min={0}
-            max={1}
-            step={0.1}
+            icon={Volume2} label="Volume"
+            value={settings.volume} min={0} max={1} step={0.1}
             display={`${Math.round(settings.volume * 100)}%`}
             onChange={(v) => updateSettings({ volume: v })}
           />
           <SliderRow
-            icon={Mic}
-            label="Pitch"
-            value={settings.pitch}
-            min={0.5}
-            max={2}
-            step={0.1}
+            icon={Mic} label="Pitch"
+            value={settings.pitch} min={0.5} max={2} step={0.1}
             display={settings.pitch.toFixed(1)}
             onChange={(v) => updateSettings({ pitch: v })}
           />
           <SliderRow
-            icon={Volume2}
-            label="Speech Rate"
-            value={settings.rate}
-            min={0.1}
-            max={1.5}
-            step={0.1}
+            icon={Volume2} label="Speech Rate"
+            value={settings.rate} min={0.1} max={1.5} step={0.1}
             display={settings.rate.toFixed(1)}
             onChange={(v) => updateSettings({ rate: v })}
           />
@@ -162,9 +134,7 @@ export default function SettingsPage() {
         <div className="bg-card border-y border-border">
           <div className="px-4 py-3">
             <Button
-              variant="destructive"
-              size="sm"
-              className="gap-1 w-full"
+              variant="destructive" size="sm" className="gap-1 w-full"
               onClick={() => {
                 if (confirm("Delete all notes permanently?")) {
                   clearAllNotes();
@@ -185,7 +155,11 @@ export default function SettingsPage() {
               <Info size={15} className="text-muted-foreground" />
               <span className="text-sm">App Version</span>
             </div>
-            <span className="text-xs text-muted-foreground">Echo AI v1.0.0</span>
+            <span className="text-xs text-muted-foreground">Echo AI v2.0.0</span>
+          </Row>
+          <Row>
+            <span className="text-sm">AI Model</span>
+            <span className="text-xs text-muted-foreground">Llama 4 Scout (Vision)</span>
           </Row>
           <Row>
             <span className="text-sm">Powered by</span>

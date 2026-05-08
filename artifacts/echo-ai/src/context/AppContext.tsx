@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { AppSettings, loadSettings, saveSettings } from "@/lib/settings";
 import { speak, pauseSpeech, resumeSpeech, stopSpeech, TtsState } from "@/lib/tts";
+import { LANGUAGE_VOICE_MAP } from "@/lib/groq";
 
 interface AppContextValue {
   settings: AppSettings;
@@ -19,11 +20,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [ttsState, setTtsState] = useState<TtsState>("stopped");
 
   useEffect(() => {
-    if (settings.darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", settings.darkMode);
   }, [settings.darkMode]);
 
   const updateSettings = useCallback((patch: Partial<AppSettings>) => {
@@ -34,20 +31,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  const speakText = useCallback((text: string) => {
-    speak(
-      text,
-      { lang: settings.voiceLanguage, volume: settings.volume, pitch: settings.pitch, rate: settings.rate },
-      setTtsState
-    );
-  }, [settings.voiceLanguage, settings.volume, settings.pitch, settings.rate]);
+  const speakText = useCallback(
+    (text: string) => {
+      const voiceLang =
+        LANGUAGE_VOICE_MAP[settings.aiResponseLanguage] ?? "en-US";
+      speak(
+        text,
+        { lang: voiceLang, volume: settings.volume, pitch: settings.pitch, rate: settings.rate },
+        setTtsState
+      );
+    },
+    [settings.aiResponseLanguage, settings.volume, settings.pitch, settings.rate]
+  );
 
   const pauseTts = useCallback(() => { pauseSpeech(); setTtsState("paused"); }, []);
   const resumeTts = useCallback(() => { resumeSpeech(); setTtsState("playing"); }, []);
   const stopTts = useCallback(() => { stopSpeech(); setTtsState("stopped"); }, []);
 
   return (
-    <AppContext.Provider value={{ settings, updateSettings, ttsState, speakText, pauseTts, resumeTts, stopTts }}>
+    <AppContext.Provider
+      value={{ settings, updateSettings, ttsState, speakText, pauseTts, resumeTts, stopTts }}
+    >
       {children}
     </AppContext.Provider>
   );

@@ -9,7 +9,7 @@ import { useApp } from "@/context/AppContext";
 import { useToast } from "@/hooks/use-toast";
 import MarkdownMessage from "@/components/MarkdownMessage";
 import { getNotes, saveNote, updateNote, Note } from "@/lib/notes";
-import { groqChat, buildSystemPrompt, detectsMath, GroqError } from "@/lib/groq";
+import { groqChat, buildSystemPrompt, GroqError, ApiMessage } from "@/lib/groq";
 
 export default function NoteDetailPage({ id }: { id: string }) {
   const [, navigate] = useLocation();
@@ -17,7 +17,6 @@ export default function NoteDetailPage({ id }: { id: string }) {
   const { toast } = useToast();
   const isNew = id === "new";
 
-  const [note, setNote] = useState<Note | null>(null);
   const [content, setContent] = useState("");
   const [subject, setSubject] = useState("General");
   const [editing, setEditing] = useState(isNew);
@@ -28,7 +27,6 @@ export default function NoteDetailPage({ id }: { id: string }) {
     if (!isNew) {
       const found = getNotes().find((n) => n.id === id);
       if (found) {
-        setNote(found);
         setContent(found.content);
         setSubject(found.subject);
       }
@@ -52,11 +50,12 @@ export default function NoteDetailPage({ id }: { id: string }) {
     if (!aiPrompt.trim() || !content.trim()) return;
     setAiLoading(true);
     try {
-      const sysPr = buildSystemPrompt(settings.aiResponseLanguage, detectsMath(content));
-      const res = await groqChat([
-        { role: "system", content: sysPr },
+      const sysPrompt = buildSystemPrompt(settings.aiResponseLanguage, settings.tone);
+      const msgs: ApiMessage[] = [
+        { role: "system", content: sysPrompt },
         { role: "user", content: `Note content:\n\n${content}\n\nInstruction: ${aiPrompt}` },
-      ]);
+      ];
+      const res = await groqChat(msgs);
       setContent(res);
       setEditing(true);
       setAiPrompt("");
@@ -75,26 +74,30 @@ export default function NoteDetailPage({ id }: { id: string }) {
     <div className="flex flex-col h-dvh bg-background">
       {/* Header */}
       <header className="flex items-center gap-2 px-4 py-3 border-b border-border bg-card shrink-0">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/notebook")}>
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => navigate("/notebook")}>
           <ArrowLeft size={18} />
         </Button>
         <Input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           placeholder="Subject / Topic"
-          className="flex-1 h-8 border-none shadow-none px-0 font-semibold text-base focus-visible:ring-0"
+          className="flex-1 h-8 border-none shadow-none px-0 font-semibold text-base focus-visible:ring-0 min-w-0"
         />
-        <div className="flex gap-1">
+        <div className="flex gap-1 shrink-0">
           {!editing && (
             <>
-              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => speakText(content)}>
+              <Button
+                size="icon" variant="ghost" className="h-8 w-8"
+                onClick={() => speakText(content)}
+              >
                 <Volume2 size={15} />
               </Button>
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-                onClick={() => { navigator.clipboard.writeText(content); toast({ title: "Copied!" }); }}
+                size="icon" variant="ghost" className="h-8 w-8"
+                onClick={() => {
+                  navigator.clipboard.writeText(content).catch(() => {});
+                  toast({ title: "Copied!" });
+                }}
               >
                 <Copy size={15} />
               </Button>
@@ -109,8 +112,8 @@ export default function NoteDetailPage({ id }: { id: string }) {
             </Button>
           )}
           {editing && (
-            <Button size="sm" className="h-8" onClick={handleSave}>
-              <Save size={14} className="mr-1" /> Save
+            <Button size="sm" className="h-8 gap-1" onClick={handleSave}>
+              <Save size={14} /> Save
             </Button>
           )}
         </div>
@@ -132,16 +135,16 @@ export default function NoteDetailPage({ id }: { id: string }) {
         )}
       </div>
 
-      {/* AI Assistant */}
+      {/* AI Assistant bar */}
       <div className="border-t border-border bg-muted/30 px-3 py-3 shrink-0">
         <p className="text-[10px] font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-          <Sparkles size={10} /> AI ASSISTANT
+          <Sparkles size={10} /> AI ASSISTANT ({settings.aiResponseLanguage} · {settings.tone})
         </p>
         <div className="flex gap-2">
           <Input
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
-            placeholder='e.g. "Simplify this" or "Translate to Bengali"'
+            placeholder='e.g. "Simplify", "Translate", "Add examples"…'
             className="text-xs h-9"
             onKeyDown={(e) => { if (e.key === "Enter") runAiAssist(); }}
           />
