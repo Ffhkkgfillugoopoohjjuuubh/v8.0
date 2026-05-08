@@ -1,19 +1,22 @@
+export type TtsState = "playing" | "paused" | "stopped";
+
 export function cleanForSpeech(text: string): string {
   return text
-    .replace(/\*\*(.+?)\*\*/g, "$1")
-    .replace(/\*(.+?)\*/g, "$1")
-    .replace(/#{1,6}\s/g, "")
-    .replace(/`(.+?)`/g, "$1")
     .replace(/```[\s\S]*?```/g, "")
-    .replace(/\[(.+?)\]\(.+?\)/g, "$1")
-    .replace(/!\[.+?\]\(.+?\)/g, "")
-    .replace(/^>\s/gm, "")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/#{1,6}\s+/g, "")
+    .replace(/>\s*/g, "")
+    .replace(/^[-*+]\s+/gm, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    .replace(/_{1,2}([^_]+)_{1,2}/g, "$1")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
-let currentUtterance: SpeechSynthesisUtterance | null = null;
-
-export type TtsState = "playing" | "paused" | "stopped";
+let _currentUtterance: SpeechSynthesisUtterance | null = null;
 
 export function speak(
   text: string,
@@ -22,6 +25,7 @@ export function speak(
 ): void {
   window.speechSynthesis.cancel();
   const cleaned = cleanForSpeech(text);
+  if (!cleaned) return;
   const utt = new SpeechSynthesisUtterance(cleaned);
   utt.lang = opts.lang;
   utt.volume = opts.volume;
@@ -30,13 +34,13 @@ export function speak(
   utt.onstart = () => onStateChange("playing");
   utt.onpause = () => onStateChange("paused");
   utt.onresume = () => onStateChange("playing");
-  utt.onend = () => { onStateChange("stopped"); currentUtterance = null; };
-  utt.onerror = () => { onStateChange("stopped"); currentUtterance = null; };
-  currentUtterance = utt;
+  utt.onend = () => { onStateChange("stopped"); _currentUtterance = null; };
+  utt.onerror = () => { onStateChange("stopped"); _currentUtterance = null; };
+  _currentUtterance = utt;
   window.speechSynthesis.speak(utt);
   onStateChange("playing");
 }
 
 export function pauseSpeech(): void { window.speechSynthesis.pause(); }
 export function resumeSpeech(): void { window.speechSynthesis.resume(); }
-export function stopSpeech(): void { window.speechSynthesis.cancel(); currentUtterance = null; }
+export function stopSpeech(): void { window.speechSynthesis.cancel(); _currentUtterance = null; }

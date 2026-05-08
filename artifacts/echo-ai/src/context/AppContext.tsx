@@ -33,8 +33,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const speakText = useCallback(
     (text: string) => {
-      const voiceLang =
-        LANGUAGE_VOICE_MAP[settings.aiResponseLanguage] ?? "en-US";
+      const voiceLang = LANGUAGE_VOICE_MAP[settings.aiResponseLanguage] ?? "en-US";
       speak(
         text,
         { lang: voiceLang, volume: settings.volume, pitch: settings.pitch, rate: settings.rate },
@@ -49,9 +48,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const stopTts = useCallback(() => { stopSpeech(); setTtsState("stopped"); }, []);
 
   return (
-    <AppContext.Provider
-      value={{ settings, updateSettings, ttsState, speakText, pauseTts, resumeTts, stopTts }}
-    >
+    <AppContext.Provider value={{ settings, updateSettings, ttsState, speakText, pauseTts, resumeTts, stopTts }}>
       {children}
     </AppContext.Provider>
   );
